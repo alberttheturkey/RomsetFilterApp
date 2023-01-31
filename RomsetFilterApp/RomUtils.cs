@@ -1,38 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 
 namespace RomsetFilterApp
 {
-    public class Rom : IComparable<Rom>
+    public enum FlagType { None, Bios, Title, Region, Language, Revision, Version, DevStatus, Additional, Special, License, Status }
+
+    public enum RegionCode
     {
-        public static Dictionary<Region, string> MultiRegionNames = new() {
-            { Region.Europe,"Europe" },
-            { Region.Asia,"Asia" },
-            { Region.World,"World" }
+        None, World, Europe, Asia, Australia, Brazil, Canada, China, France,
+        Germany, HongKong, Italy, Japan, Korea, Netherlands, Spain, Sweden, USA
+    }
+
+    public static class NameDataDictionary
+    {
+        public static string? GetValue<FlagType>(this Dictionary<FlagType, string> dictionary, FlagType key) where FlagType : notnull
+            => dictionary.TryGetValue(key, out string? value) ? value : null;
+    }
+
+    public class Rom
+    {
+        public static readonly Dictionary<RegionCode, string> MultiRegionNames = new() {
+            { RegionCode.Europe,    "Europe" },
+            { RegionCode.Asia,      "Asia" },
+            { RegionCode.World,     "World" }
         };
 
-        public static Dictionary<Region, string> RegionNames = new() {
-            { Region.Australia,"Australia" },
-            { Region.Brazil,"Brazil" },
-            { Region.Canada,"Canada" },
-            { Region.China,"China" },
-            { Region.France,"France" },
-            { Region.Germany,"Germany" },
-            { Region.HongKong,"Hong Kong" },
-            { Region.Italy,"Italy" },
-            { Region.Japan,"Japan" },
-            { Region.Korea,"Korea" },
-            { Region.Netherlands,"Netherlands" },
-            { Region.Spain,"Spain" },
-            { Region.Sweden,"Sweden" },
-            { Region.USA,"USA" }
+        public static readonly Dictionary<RegionCode, string> RegionNames = new() {
+            { RegionCode.Australia,     "Australia" },
+            { RegionCode.Brazil,        "Brazil" },
+            { RegionCode.Canada,        "Canada" },
+            { RegionCode.China,         "China" },
+            { RegionCode.France,        "France" },
+            { RegionCode.Germany,       "Germany" },
+            { RegionCode.HongKong,      "Hong Kong" },
+            { RegionCode.Italy,         "Italy" },
+            { RegionCode.Japan,         "Japan" },
+            { RegionCode.Korea,         "Korea" },
+            { RegionCode.Netherlands,   "Netherlands" },
+            { RegionCode.Spain,         "Spain" },
+            { RegionCode.Sweden,        "Sweden" },
+            { RegionCode.USA,           "USA" }
         };
 
-        public static List<string> LanguageCodes = new()
+        public static readonly List<string> LanguageCodes = new()
         {
             "ab","aa","af","ak","sq","am","ar","an","hy","as","av","ae","ay","az","bm","ba","eu","be","bn","bi","bs","br","bg",
             "my","ca","ch","ce","ny","zh","cu","cv","kw","co","cr","hr","cs","da","dv","nl","dz","en","eo","et","ee","fo","fj",
@@ -44,10 +53,7 @@ namespace RomsetFilterApp
             "ti","to","ts","tn","tr","tk","tw","ug","uk","ur","uz","ve","vi","vo","wa","cy","wo","xh","yi","yo","za","zu",
         };
 
-        public enum Region { None, World, Europe, Asia, Australia, Brazil, Canada, China, France, Germany, HongKong,
-            Italy, Japan, Korea, Netherlands, Spain, Sweden, USA }
-
-        public List<Region> Regions { get; set; }
+        public List<RegionCode> Regions { get; set; } = new();
 
         public float VersionNumber { get; set; } = 1;
 
@@ -61,11 +67,110 @@ namespace RomsetFilterApp
         public bool IsPhaser { get; set; } = false;
         public bool NoFlag { get; set; } = false;
 
-        public string Name { get; set; }
-        public string FilePath { get; set; }
+        public bool VersionSkip { get; set; } = false;
 
-        public List<string> NameData { get; set; } = new List<string>();
+        public string Name { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string FilePath { get; set; } = "";
 
+        public Dictionary<FlagType, string> NameData { get; set; } = new();
+
+        public Rom(string filePath)
+        {
+            Name = Path.GetFileName(filePath); ;
+            FilePath = filePath;
+
+            ExtractNameData();
+
+            ExtractVersionNumber();
+            ExtractRegions();
+            ExtractFlags();
+        }
+
+        #region Name Data Parsing
+        private void ExtractNameData()
+        {
+            // Load all the data from the name into a list
+            var nameDataStrings = Regex.Matches(Name, @"[(](?<=\()[^()]*(?=\))[)]|[[](?<=\[)[^()]*(?=\])[]]", RegexOptions.IgnoreCase).Cast<Match>().Select(match => match.Value).ToList();
+            string title = Path.GetFileNameWithoutExtension(Name);
+
+            foreach (var data in nameDataStrings)
+            {
+                title = title.Replace(data, "");
+                var type = GetNameDataType(data);
+                if (!NameData.ContainsKey(type))
+                {
+                    NameData.Add(GetNameDataType(data), data);
+                }
+            }
+
+            title = title.Trim();
+            NameData.Add(GetNameDataType(title), title);
+            Title = title;
+        }
+
+        private void ExtractFlags()
+        {
+            var devStatuses = NameData.Where(x => x.Key == FlagType.DevStatus).Select(x => x.Value).ToList();
+            var additional = NameData.Where(x => x.Key == FlagType.Additional).Select(x => x.Value).ToList();
+
+            // Setup our flags
+            IsUnlicensed = NameData.GetValue(FlagType.Language) != null;
+            IsBIOS = NameData.GetValue(FlagType.Bios) != null;
+
+            IsDemo = devStatuses.Where(x => x.ToLower().Contains("demo")).Any();
+            IsPrototype = devStatuses.Where(x => x.ToLower().Contains("proto")).Any();
+            IsBeta = devStatuses.Where(x => x.ToLower().Contains("beta")).Any();
+            IsSample = devStatuses.Where(x => x.ToLower().Contains("sample")).Any();
+            IsPhaser = additional.Where(x => x.ToLower().Contains("phaser")).Any();
+
+            IsMultiRegion = Regions.Count > 1;
+
+            if (!IsUnlicensed && !IsDemo && !IsPrototype && !IsBeta && !IsSample && !IsBIOS && !IsPhaser)
+            {
+                NoFlag = true;
+            }
+        }
+
+        private void ExtractVersionNumber()
+        {
+
+            // Find out revision number and set it
+            var revisionString = NameData.GetValue(FlagType.Revision);
+            if (!string.IsNullOrEmpty(revisionString))
+            {
+                _ = float.TryParse($"{VersionNumber}.{GetRevisionNumber(revisionString)}", out float combinedVersion);
+                VersionNumber = combinedVersion;
+            }
+
+            // Revision numbers can also be in the form of a float
+            var versionString = NameData.GetValue(FlagType.Version);
+            if (!string.IsNullOrEmpty(versionString))
+            {
+                _ = float.TryParse(versionString.Replace("v", ""), out float versionFloat);
+                VersionNumber = versionFloat;
+            }
+        }
+
+        private void ExtractRegions()
+        {
+            // Region sorting
+            var regionNameData = NameData.Where(x => x.Key == FlagType.Region).Select(x => x.Value).FirstOrDefault();
+            if (regionNameData != null)
+            {
+                IsMultiRegion = MultiRegionNames.Values.Any(s => regionNameData.Contains(s));
+
+                var allRegions = RegionNames.Concat(MultiRegionNames).ToDictionary(r => r.Key, r => r.Value);
+                var regions = regionNameData.Replace("(", "").Replace(")", "").Split(",");
+                Regions.AddRange(from region in regions
+                                 let regionMatch = allRegions.Where(r => r.Value == region.Trim()).Select(r => r.Key).FirstOrDefault(RegionCode.None)
+                                 where !Regions.Contains(regionMatch)
+                                 select regionMatch);
+            }
+        }
+        #endregion
+
+        #region Overrides
         public override string ToString()
         {
             return $"Unl:{Convert.ToInt32(IsUnlicensed)}," +
@@ -79,78 +184,61 @@ namespace RomsetFilterApp
                 $"Ver:{VersionNumber}. " +
                 $"NameData:{string.Join(",", NameData)}, filename:{Name}";
         }
+        #endregion
 
-        public Rom(string filePath)
+        #region Name Data Processing
+        private static FlagType GetNameDataType(string data)
         {
-            Name = Path.GetFileName(filePath); ;
-            FilePath = filePath;
-            Regions = new List<Region>();
 
-            // Load all the data from the name into a list
-            NameData = Regex.Matches(Name, @"(?<=\()[^()]*(?=\))|(?<=\[)[^()]*(?=\])").Cast<Match>().Select(match => match.Value).ToList();
-
-            // Find out revision number and set it
-            var revisionString = NameData.Where(x => x.Contains("Rev", StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-            if (!string.IsNullOrEmpty(revisionString))
+            if (data.ToLower().Equals("(unl)", StringComparison.OrdinalIgnoreCase))
             {
-                _ = float.TryParse($"{VersionNumber}.{GetRevisionNumber(revisionString)}", out float combinedVersion);
-                VersionNumber = combinedVersion;
+                return FlagType.License;
+            }
+            else if (data.ToLower().Equals("[bios]", StringComparison.OrdinalIgnoreCase))
+            {
+                return FlagType.Bios;
+            }
+            else if (data.ToLower().StartsWith("(proto", StringComparison.OrdinalIgnoreCase) ||
+                data.ToLower().StartsWith("(beta", StringComparison.OrdinalIgnoreCase) ||
+                data.ToLower().StartsWith("(sample", StringComparison.OrdinalIgnoreCase) ||
+                data.ToLower().StartsWith("(demo", StringComparison.OrdinalIgnoreCase)
+                )
+            {
+                return FlagType.DevStatus;
+            }
+            else if (Regex.Match(data, @"\(rev *[1-9]\d*\)", RegexOptions.IgnoreCase).Success)
+            {
+                return FlagType.Revision;
+            }
+            else if (Regex.Match(data, @"^[(][v] *[1-9]\d*\.[1-9]\d*[)]", RegexOptions.IgnoreCase).Success)
+            {
+                return FlagType.Version;
+            }
+            else if (data.Contains('(') && data.Contains(')') && RegionNames.Concat(MultiRegionNames).ToDictionary(r => r.Key, r => r.Value).Values.Any(x => data.Contains(x)))
+            {
+                return FlagType.Region;
+            }
+            else if (!data.StartsWith("(") && !data.StartsWith("["))
+            {
+                return FlagType.Title;
             }
 
-            // Revision numbers can also be in the form of a float
-            var versionString = NameData.Where(x => Regex.IsMatch(x, @"^[v][1-9]\d*\.[1-9]\d*")).FirstOrDefault();
-            if (!string.IsNullOrEmpty(versionString))
-            {
-                _ = float.TryParse(versionString.Replace("v", ""), out float versionFloat);
-                VersionNumber = versionFloat;
-            }
-
-            var allRegions = RegionNames.Concat(MultiRegionNames).ToDictionary(r => r.Key, r => r.Value);
-            var allRegionsValues = allRegions.Values;
-
-            // Region sorting
-            var regionNameData = NameData.Where(x => allRegionsValues.Any(s => x.Contains(s))).FirstOrDefault();
-
-            // Region matching
-            if (!string.IsNullOrEmpty(regionNameData))
-            {
-                IsMultiRegion = MultiRegionNames.Values.Any(s => regionNameData.Contains(s));
-
-                var regions = regionNameData.Split(",");
-                Regions.AddRange(from region in regions
-                                 let regionMatch = allRegions.Where(r => r.Value == region.Trim()).Select(r => r.Key).FirstOrDefault(Region.None)
-                                 where !Regions.Contains(regionMatch)
-                                 select regionMatch);
-            }
-
-            // Setup our flags
-            IsUnlicensed = NameData.Where(x => x.Contains("unl", StringComparison.OrdinalIgnoreCase)).Any();
-            IsDemo = NameData.Where(x => x.Contains("demo", StringComparison.OrdinalIgnoreCase)).Any();
-            IsPrototype = NameData.Where(x => x.Contains("proto", StringComparison.OrdinalIgnoreCase)).Any();
-            IsBeta = NameData.Where(x => x.Contains("beta", StringComparison.OrdinalIgnoreCase)).Any();
-            IsSample = NameData.Where(x => x.Contains("sample", StringComparison.OrdinalIgnoreCase)).Any();
-            IsBIOS = NameData.Where(x => x.Contains("bios", StringComparison.OrdinalIgnoreCase)).Any();
-            IsPhaser = NameData.Where(x => x.Contains("phaser", StringComparison.OrdinalIgnoreCase)).Any();
-            IsMultiRegion = Regions.Count > 1;
-
-            if (!IsUnlicensed && !IsDemo && !IsPrototype && !IsBeta && !IsSample && !IsBIOS && !IsPhaser)
-            {
-                NoFlag = true;
-            }
+            return FlagType.None;
         }
 
         public static int GetRevisionNumber(string revisionString)
         {
+            var noBracketsRevision = revisionString.Replace("(",string.Empty).Replace(")",string.Empty);
             var stack = new Stack<char>();
 
-            for (var i = revisionString.Length - 1; i >= 0; i--)
+            for (var i = noBracketsRevision.Length - 1; i >= 0; i--)
             {
-                if (!char.IsNumber(revisionString[i]))
+                if (!char.IsNumber(noBracketsRevision[i]))
                 {
                     break;
                 }
 
-                stack.Push(revisionString[i]);
+                stack.Push(noBracketsRevision[i]);
             }
 
             _ = int.TryParse(new string(stack.ToArray()), out int result);
@@ -159,7 +247,9 @@ namespace RomsetFilterApp
 
         public static bool MatchRom(Rom rom, RomFilter filter)
         {
-            return (
+            var isRegionMatch = rom.Regions.Where(x => filter.Regions.Contains(x)).Any();
+
+            var isFlagMatch = (filter.MultiRegion && rom.IsMultiRegion) ||
                 (filter.Phaser && rom.IsPhaser) ||
                 (filter.Bios && rom.IsBIOS) ||
                 (filter.Sample && rom.IsSample) ||
@@ -167,18 +257,77 @@ namespace RomsetFilterApp
                 (filter.Prototype && rom.IsPrototype) ||
                 (filter.Demo && rom.IsDemo) ||
                 (filter.Unlicensed && rom.IsUnlicensed) ||
-                (filter.NoFlag && rom.NoFlag)
-                );
+                (filter.NoFlag && rom.NoFlag);
+
+            return isRegionMatch && isFlagMatch;
+        }
+        #endregion
+
+        #region File Operations
+        public static void StartOperation(List<Rom> copyRoms, string outputFolder, bool move, bool alphabetSplit)
+        {
+            // Duck out for no alphabet split
+            if (!alphabetSplit)
+            {
+                TransferRoms(copyRoms, move, outputFolder);
+                return;
+            }
+
+            // Grab our letters and start making folders
+            var letters = copyRoms.Select(x => x.Title[..1]).Distinct().ToList();
+
+            foreach (var letter in letters)
+            {
+                if (letter == null)
+                {
+                    continue;
+                }
+
+                // We need to make sure that number are all put into the same folder
+                var letterFolder = letter;
+                if (int.TryParse(letter, out _))
+                {
+                    letterFolder = "#";
+                }
+
+                // Create our path if it doesn't already exist
+                var letterPath = $"{outputFolder}/{letterFolder}";
+                if (!Directory.Exists(letterPath))
+                {
+                    Directory.CreateDirectory(letterPath);
+                }
+
+                // Copy only the roms for this letter
+                var letterRoms = copyRoms.Where(x => x.Title.StartsWith(letter)).ToList();
+
+                TransferRoms(letterRoms, move, letterPath);
+            }
         }
 
-        public int CompareTo(Rom? other)
+        public static void TransferRoms(List<Rom> copyRoms, bool move, string path)
         {
-            throw new NotImplementedException();
+            foreach (var rom in copyRoms)
+            {
+                // Duck out for not needed version
+                if (rom.VersionSkip) continue;
+
+                if (move)
+                {
+                    File.Move(rom.FilePath, $"{path}\\{rom.Name}", true);
+                }
+                else
+                {
+                    File.Copy(rom.FilePath, $"{path}\\{rom.Name}", true);
+                }
+            }
         }
+        #endregion
+
     }
 
     public class RomFilter
     {
+        // Enums
         public enum RevisionSelectionMode { None, Latest, Earliest, All }
         public RevisionSelectionMode RevisionSelection { get; set; }
 
@@ -194,24 +343,38 @@ namespace RomsetFilterApp
         public bool NoFlag { get; set; }
 
         // Regions
-        public bool NoRegion { get; set; }
-        public bool Sweden { get; set; }
-        public bool Spain { get; set; }
-        public bool Netherlands { get; set; }
-        public bool Korea { get; set; }
-        public bool Italy { get; set; }
-        public bool HongKong { get; set; }
-        public bool Germany { get; set; }
-        public bool France { get; set; }
-        public bool China { get; set; }
-        public bool Canada { get; set; }
-        public bool Brazil { get; set; }
-        public bool Australia { get; set; }
-        public bool Asia { get; set; }
-        public bool Japan { get; set; }
-        public bool Europe { get; set; }
-        public bool USA { get; set; }
-        public bool World { get; set; }
+        public List<RegionCode> Regions { get; set; } = new List<RegionCode>();
 
+        public static void SetRomVersionSkips(List<Rom> copyRoms, RevisionSelectionMode mode)
+        {
+            if (mode == RevisionSelectionMode.All)
+            {
+                return;
+            }
+
+            var duplicates = copyRoms.GroupBy(x => x.Title + string.Join("|", x.NameData.Where(x => (!x.Key.Equals(FlagType.Revision) && !x.Key.Equals(FlagType.Version))).ToArray()), x => x).Where(g => g.Count() > 1);
+
+            foreach (var group in duplicates)
+            {
+                // Store the version so we can tell which one is the latest or earliest
+                float storedVersion = mode == RevisionSelectionMode.Latest ? 0 : float.MaxValue;
+                foreach (var rom in group)
+                {
+                    // Set our stored version based on selection mode
+                    if ((rom.VersionNumber > storedVersion && mode == RevisionSelectionMode.Latest) ||
+                        (rom.VersionNumber < storedVersion && mode == RevisionSelectionMode.Earliest))
+                    {
+                        storedVersion = rom.VersionNumber;
+                    }
+                }
+
+                // Iterate through all roms in the group again to set their skip now that we know the 
+                foreach (var rom in group)
+                {
+                    rom.VersionSkip = !(rom.VersionNumber == storedVersion);
+                }
+
+            }
+        }
     }
 }

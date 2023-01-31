@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace RomsetFilterApp
 {
     public partial class MainWindow : Form
@@ -6,12 +8,19 @@ namespace RomsetFilterApp
 
         public MainWindow()
         {
+
             InitializeComponent();
         }
 
+        #region Event Handlers
         private void MainWindow_Load(object sender, EventArgs e)
         {
             RevisionSelectionCombobox.SelectedIndex = 0;
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            if (version != null)
+            {
+                Text = $"Romset Filter App v{version.ToString(2)}";
+            }
         }
 
         private void RomsetFolderBrowseButton_Click(object sender, EventArgs e)
@@ -30,27 +39,39 @@ namespace RomsetFilterApp
 
         private void CopyButton_Click(object sender, EventArgs e)
         {
+            CopyButton.Enabled = false;
+
+            var romsetFolder = RomsetFolderPathTextbox.Text;
+            if (romsetFolder.EndsWith("\\"))
+            {
+                romsetFolder = romsetFolder[..^1];
+            }
+
+            var outputFolder = OutputFolderTextbox.Text;
+            if (outputFolder.EndsWith("\\"))
+            {
+                outputFolder = outputFolder[..^1];
+            }
+
+            // Check to see if our folder exist
+            if(!Directory.Exists(romsetFolder))
+            {
+                MessageBox.Show("This Romset folder doesn't exist");
+                return;
+            }
+
+            if (!Directory.Exists(outputFolder))
+            {
+                if (MessageBox.Show("Output folder doesn't exist, Create it?", "Create output folder", MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    return;
+                }
+                Directory.CreateDirectory(outputFolder);
+            }
+
+            // Get our filter from the user interface
             var filter = new RomFilter
             {
-                Asia = AsiaCheckbox.Checked,
-                Australia = AustraliaCheckbox.Checked,
-                Brazil = BrazilCheckbox.Checked,
-                Canada = CanadaCheckbox.Checked,
-                China = ChinaCheckbox.Checked,
-                Europe = EuropeCheckbox.Checked,
-                France = FranceCheckbox.Checked,
-                Germany = GermanyCheckbox.Checked,
-                HongKong = HongKongCheckbox.Checked,
-                Italy = ItalyCheckbox.Checked,
-                Japan = JapanCheckbox.Checked,
-                Korea = KoreaCheckbox.Checked,
-                Netherlands = NetherlandsCheckbox.Checked,
-                NoRegion = NoRegionCheckbox.Checked,
-                Spain = SpainCheckbox.Checked,
-                Sweden = SwedenCheckbox.Checked,
-                USA = USACheckbox.Checked,
-                World = WorldCheckbox.Checked,
-
                 Beta = BetaCheckbox.Checked,
                 Bios = BiosCheckbox.Checked,
                 Demo = DemoCheckbox.Checked,
@@ -68,13 +89,16 @@ namespace RomsetFilterApp
                 Unlicensed = UnlicensedCheckbox.Checked
             };
 
+            AddFilterRegionList(filter);
+
+            // Get the rom files and figure out which ones to copy
             var romsFiles = Directory.GetFiles(RomsetFolderPathTextbox.Text);
             var roms = new List<Rom>();
+
             foreach (var romsFile in romsFiles)
             {
                 roms.Add(new Rom(romsFile));
             }
-
 
             var copyRoms = new List<Rom>();
 
@@ -86,30 +110,13 @@ namespace RomsetFilterApp
                 }
             }
 
-            foreach(var rom in copyRoms)
-            {
-                if (MoveRadioButton.Checked)
-                {
-                    File.Move(rom.FilePath, $"{OutputFolderTextbox.Text}\\{rom.Name}", true);
-                }
-                else
-                {
-                    File.Copy(rom.FilePath, $"{OutputFolderTextbox.Text}\\{rom.Name}", true);
-                }
-            }
-        }
+            RomFilter.SetRomVersionSkips(copyRoms, filter.RevisionSelection);
 
-        private void OpenFolderDialog(TextBox textbox)
-        {
-            if (!string.IsNullOrEmpty(textbox.Text))
-            {
-                dialog.SelectedPath = textbox.Text;
-            }
-            var result = dialog.ShowDialog();
-            if (result == DialogResult.OK)
-            {
-                textbox.Text = dialog.SelectedPath;
-            }
+            // Start our move or copy operations
+            Rom.StartOperation(copyRoms, outputFolder, MoveRadioButton.Checked, AlphabetSplitCheckbox.Checked);
+
+            MessageBox.Show($"{(MoveRadioButton.Checked ? "Move": "Copy")} operation complete. {(MoveRadioButton.Checked ? "Moved" : "Copied")} {copyRoms.Count} rom{(copyRoms.Count == 1 ? "" : "s")}");
+            CopyButton.Enabled = true;
         }
 
         private void FolderTextbox_TextChanged(object sender, EventArgs e)
@@ -136,41 +143,54 @@ namespace RomsetFilterApp
         {
             SetAllRegions(false);
         }
+        #endregion
+
+        #region Interface Methods
+        private void AddFilterRegionList(RomFilter filter)
+        {
+            if (AsiaCheckbox.Checked)           filter.Regions.Add(RegionCode.Asia);
+            if (AustraliaCheckbox.Checked)      filter.Regions.Add(RegionCode.Australia);
+            if (BrazilCheckbox.Checked)         filter.Regions.Add(RegionCode.Brazil);            
+            if (CanadaCheckbox.Checked)         filter.Regions.Add(RegionCode.Canada);            
+            if (ChinaCheckbox.Checked)          filter.Regions.Add(RegionCode.China);            
+            if (EuropeCheckbox.Checked)         filter.Regions.Add(RegionCode.Europe);            
+            if (FranceCheckbox.Checked)         filter.Regions.Add(RegionCode.France);            
+            if (GermanyCheckbox.Checked)        filter.Regions.Add(RegionCode.Germany);            
+            if (HongKongCheckbox.Checked)       filter.Regions.Add(RegionCode.HongKong);            
+            if (ItalyCheckbox.Checked)          filter.Regions.Add(RegionCode.Italy);            
+            if (JapanCheckbox.Checked)          filter.Regions.Add(RegionCode.Japan);            
+            if (KoreaCheckbox.Checked)          filter.Regions.Add(RegionCode.Korea);            
+            if (NetherlandsCheckbox.Checked)    filter.Regions.Add(RegionCode.Netherlands);            
+            if (SpainCheckbox.Checked)          filter.Regions.Add(RegionCode.Spain);            
+            if (USACheckbox.Checked)            filter.Regions.Add(RegionCode.USA);            
+            if (WorldCheckbox.Checked)          filter.Regions.Add(RegionCode.World);            
+        }                                                          
+
+        private void OpenFolderDialog(TextBox textbox)
+        {
+            if (!string.IsNullOrEmpty(textbox.Text))
+            {
+                dialog.SelectedPath = textbox.Text;
+            }
+            var result = dialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                textbox.Text = dialog.SelectedPath;
+            }
+        }
 
         private void SetAllRegions(bool check)
         {
-            AsiaCheckbox.Checked = check;
-            AustraliaCheckbox.Checked = check;
-            BrazilCheckbox.Checked = check;
-            CanadaCheckbox.Checked = check;
-            ChinaCheckbox.Checked = check;
-            EuropeCheckbox.Checked = check;
-            FranceCheckbox.Checked = check;
-            GermanyCheckbox.Checked = check;
-            HongKongCheckbox.Checked = check;
-            ItalyCheckbox.Checked = check;
-            JapanCheckbox.Checked = check;
-            KoreaCheckbox.Checked = check;
-            NetherlandsCheckbox.Checked = check;
-            NoRegionCheckbox.Checked = check;
-            SpainCheckbox.Checked = check;
-            SwedenCheckbox.Checked = check;
-            USACheckbox.Checked = check;
-            WorldCheckbox.Checked = check;
+            foreach(CheckBox checkbox in RegionsGroupBox.Controls.OfType<CheckBox>())
+                checkbox.Checked = check;
         }
 
         private void SetAllFlags(bool check)
         {
-            SampleCheckbox.Checked = check;
-            UnlicensedCheckbox.Checked = check;
-            BetaCheckbox.Checked = check;
-            BiosCheckbox.Checked = check;
-            DemoCheckbox.Checked = check;
-            NoFlagCheckbox.Checked = check;
-            MultiRegionCheckbox.Checked = check;
-            PhaserCheckbox.Checked = check;
-            PrototypeCheckbox.Checked = check;
+            foreach (CheckBox checkbox in FlagsGroupbox.Controls.OfType<CheckBox>())
+                checkbox.Checked = check;
         }
+        #endregion
 
     }
 }

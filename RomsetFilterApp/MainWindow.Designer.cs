@@ -49,7 +49,7 @@
             this.RegionsGroupBox = new System.Windows.Forms.GroupBox();
             this.DeselectAllRegionsButton = new System.Windows.Forms.Button();
             this.RegionsSelectAllButton = new System.Windows.Forms.Button();
-            this.NoRegionCheckbox = new System.Windows.Forms.CheckBox();
+            this.OtherRegionsCheckbox = new System.Windows.Forms.CheckBox();
             this.SwedenCheckbox = new System.Windows.Forms.CheckBox();
             this.SpainCheckbox = new System.Windows.Forms.CheckBox();
             this.NetherlandsCheckbox = new System.Windows.Forms.CheckBox();
@@ -186,6 +186,8 @@
             // NoFlagCheckbox
             // 
             this.NoFlagCheckbox.AutoSize = true;
+            this.NoFlagCheckbox.Checked = true;
+            this.NoFlagCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.NoFlagCheckbox.Location = new System.Drawing.Point(20, 354);
             this.NoFlagCheckbox.Name = "NoFlagCheckbox";
             this.NoFlagCheckbox.Size = new System.Drawing.Size(120, 34);
@@ -277,7 +279,7 @@
             // 
             this.RegionsGroupBox.Controls.Add(this.DeselectAllRegionsButton);
             this.RegionsGroupBox.Controls.Add(this.RegionsSelectAllButton);
-            this.RegionsGroupBox.Controls.Add(this.NoRegionCheckbox);
+            this.RegionsGroupBox.Controls.Add(this.OtherRegionsCheckbox);
             this.RegionsGroupBox.Controls.Add(this.SwedenCheckbox);
             this.RegionsGroupBox.Controls.Add(this.SpainCheckbox);
             this.RegionsGroupBox.Controls.Add(this.NetherlandsCheckbox);
@@ -322,15 +324,15 @@
             this.RegionsSelectAllButton.UseVisualStyleBackColor = true;
             this.RegionsSelectAllButton.Click += new System.EventHandler(this.RegionsSelectAllButton_Click);
             // 
-            // NoRegionCheckbox
+            // OtherRegionsCheckbox
             // 
-            this.NoRegionCheckbox.AutoSize = true;
-            this.NoRegionCheckbox.Location = new System.Drawing.Point(162, 354);
-            this.NoRegionCheckbox.Name = "NoRegionCheckbox";
-            this.NoRegionCheckbox.Size = new System.Drawing.Size(137, 34);
-            this.NoRegionCheckbox.TabIndex = 0;
-            this.NoRegionCheckbox.Text = "No Region";
-            this.NoRegionCheckbox.UseVisualStyleBackColor = true;
+            this.OtherRegionsCheckbox.AutoSize = true;
+            this.OtherRegionsCheckbox.Location = new System.Drawing.Point(162, 354);
+            this.OtherRegionsCheckbox.Name = "OtherRegionsCheckbox";
+            this.OtherRegionsCheckbox.Size = new System.Drawing.Size(171, 34);
+            this.OtherRegionsCheckbox.TabIndex = 0;
+            this.OtherRegionsCheckbox.Text = "Other Regions";
+            this.OtherRegionsCheckbox.UseVisualStyleBackColor = true;
             // 
             // SwedenCheckbox
             // 
@@ -638,7 +640,6 @@
         private CheckBox EuropeCheckbox;
         private CheckBox USACheckbox;
         private CheckBox WorldCheckbox;
-        private CheckBox NoRegionCheckbox;
         private CheckBox SwedenCheckbox;
         private CheckBox SpainCheckbox;
         private CheckBox NetherlandsCheckbox;
@@ -676,5 +677,6 @@
         private Button RegionsSelectAllButton;
         private Button DeselectAllFlagsButton;
         private Button DeselectAllRegionsButton;
+        private CheckBox OtherRegionsCheckbox;
     }
 }
