@@ -487,6 +487,8 @@
             // USACheckbox
             // 
             this.USACheckbox.AutoSize = true;
+            this.USACheckbox.Checked = true;
+            this.USACheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.USACheckbox.Location = new System.Drawing.Point(22, 74);
             this.USACheckbox.Name = "USACheckbox";
             this.USACheckbox.Size = new System.Drawing.Size(78, 34);

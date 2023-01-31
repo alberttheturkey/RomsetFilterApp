@@ -206,7 +206,7 @@ namespace RomsetFilterApp
             {
                 return FlagType.DevStatus;
             }
-            else if (Regex.Match(data, @"\(rev *[1-9]\d*\)", RegexOptions.IgnoreCase).Success)
+            else if (Regex.Match(data, @"\(rev *[a-z1-9]\d*\)", RegexOptions.IgnoreCase).Success)
             {
                 return FlagType.Revision;
             }
@@ -228,7 +228,15 @@ namespace RomsetFilterApp
 
         public static int GetRevisionNumber(string revisionString)
         {
+            bool letterRevision = Regex.Match(revisionString, @"\(rev *[a-z]*\)", RegexOptions.IgnoreCase).Success;
+
             var noBracketsRevision = revisionString.Replace("(",string.Empty).Replace(")",string.Empty);
+
+            if (letterRevision)
+            {
+                return char.ToUpper(noBracketsRevision[noBracketsRevision.Length-1]) - 64;
+            }
+
             var stack = new Stack<char>();
 
             for (var i = noBracketsRevision.Length - 1; i >= 0; i--)
