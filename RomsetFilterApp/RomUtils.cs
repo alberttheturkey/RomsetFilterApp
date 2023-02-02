@@ -92,7 +92,7 @@ namespace RomsetFilterApp
         {
             // Load all the data from the name into a list
             var nameDataStrings = Regex.Matches(Name, @"[(](?<=\()[^()]*(?=\))[)]|[[](?<=\[)[^()]*(?=\])[]]", RegexOptions.IgnoreCase).Cast<Match>().Select(match => match.Value).ToList();
-            string title = Path.GetFileNameWithoutExtension(Name);
+            var title = Path.GetFileNameWithoutExtension(Name);
 
             foreach (var data in nameDataStrings)
             {
@@ -228,13 +228,13 @@ namespace RomsetFilterApp
 
         public static int GetRevisionNumber(string revisionString)
         {
-            bool letterRevision = Regex.Match(revisionString, @"\(rev *[a-z]*\)", RegexOptions.IgnoreCase).Success;
+            var letterRevision = Regex.Match(revisionString, @"\(rev *[a-z]*\)", RegexOptions.IgnoreCase).Success;
 
             var noBracketsRevision = revisionString.Replace("(",string.Empty).Replace(")",string.Empty);
 
             if (letterRevision)
             {
-                return char.ToUpper(noBracketsRevision[noBracketsRevision.Length-1]) - 64;
+                return char.ToUpper(noBracketsRevision[^1]) - 64;
             }
 
             var stack = new Stack<char>();
