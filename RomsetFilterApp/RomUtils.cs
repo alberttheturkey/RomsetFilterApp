@@ -1,13 +1,23 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.IO.Compression;
+using System.Text.RegularExpressions;
 
 namespace RomsetFilterApp
 {
-    public enum FlagType { None, Bios, Title, Region, Language, Revision, Version, DevStatus, Additional, Special, License, Status }
+    public enum FlagType 
+    { 
+        None, Bios, Title, Region, Language, Revision, 
+        Version, DevStatus, Additional, Special, License, Status 
+    }
 
     public enum RegionCode
     {
         None, World, Europe, Asia, Australia, Brazil, Canada, China, France,
         Germany, HongKong, Italy, Japan, Korea, Netherlands, Spain, Sweden, USA
+    }
+
+    public enum ZipMode
+    {
+        None, Zip, UnZip
     }
 
     public static class NameDataDictionary
@@ -272,17 +282,17 @@ namespace RomsetFilterApp
         #endregion
 
         #region File Operations
-        public static void StartOperation(List<Rom> copyRoms, string outputFolder, bool move, bool alphabetSplit)
+        public static int StartOperation(List<Rom> copyRoms, string outputFolder, bool move, ZipMode zipMode, bool alphabetSplit)
         {
             // Duck out for no alphabet split
             if (!alphabetSplit)
             {
-                TransferRoms(copyRoms, move, outputFolder);
-                return;
+                return TransferRoms(copyRoms, move, zipMode, outputFolder);
             }
 
             // Grab our letters and start making folders
             var letters = copyRoms.Select(x => x.Title[..1]).Distinct().ToList();
+            var romCount = 0;
 
             foreach (var letter in letters)
             {
@@ -308,26 +318,95 @@ namespace RomsetFilterApp
                 // Copy only the roms for this letter
                 var letterRoms = copyRoms.Where(x => x.Title.StartsWith(letter)).ToList();
 
-                TransferRoms(letterRoms, move, letterPath);
+                romCount += TransferRoms(letterRoms, move, zipMode, letterPath);
             }
+
+            return romCount;
         }
 
-        public static void TransferRoms(List<Rom> copyRoms, bool move, string path)
+        public static int TransferRoms(List<Rom> copyRoms, bool move, ZipMode zipMode, string outputPath)
         {
+            var copyCount = 0;
             foreach (var rom in copyRoms)
             {
+                var newFilePath = $"{outputPath}\\{rom.Name}";
                 // Duck out for not needed version
                 if (rom.VersionSkip) continue;
 
-                if (move)
+                if (zipMode != ZipMode.None)
                 {
-                    File.Move(rom.FilePath, $"{path}\\{rom.Name}", true);
+                    copyCount += ZipOrUnzip(move, zipMode, rom, newFilePath, outputPath);
                 }
                 else
                 {
-                    File.Copy(rom.FilePath, $"{path}\\{rom.Name}", true);
+                    copyCount += CopyOrMove(move, rom, newFilePath);
                 }
             }
+            return copyCount;
+        }
+
+        private static int ZipOrUnzip(bool move, ZipMode zipMode, Rom rom, string newFilePath, string outputPath)
+        {
+            // If the file doesn't match the zip mode (File is already a zip or already unzipped) Then we duck out with normal transfer
+            var unZipMatch = zipMode == ZipMode.UnZip && Path.GetExtension(newFilePath).Equals(".zip");
+            var zipMatch = zipMode == ZipMode.Zip && !Path.GetExtension(newFilePath).Equals(".zip");
+            var isMismatch = !unZipMatch && !zipMatch;
+
+            if (isMismatch)
+            {
+                return CopyOrMove(move, rom, newFilePath);
+            }
+
+            // Otherwise we move ahead
+
+            // Start with count logic, if the file path doesn't already exist than increment the count
+            var copyCount = 0;
+            var files = Directory.GetFiles(outputPath, $"{Path.GetFileNameWithoutExtension(rom.Name)}.{(unZipMatch ? "*" : "zip")}");
+            if (files.Length == 0)
+            {
+                copyCount = 1;
+            }
+
+            // Run our zip/unzip operation
+            if (unZipMatch)
+            {
+                ZipFile.ExtractToDirectory(rom.FilePath, outputPath, true);
+            }
+            else if (zipMatch)
+            {
+                using var zip = ZipFile.Open(Path.ChangeExtension(newFilePath, ".zip"), ZipArchiveMode.Update);
+                zip.CreateEntryFromFile(rom.FilePath, newFilePath);
+            }
+
+            // Delete the source file if we're moving
+            if (move)
+            {
+                File.Delete(rom.FilePath);
+            }
+
+
+            return copyCount;
+        }
+
+        private static int CopyOrMove(bool move, Rom rom, string newFilePath)
+        {
+            int count = 0;
+
+            if (!File.Exists(newFilePath))
+            {
+                count = 1;
+            }
+
+            if (move)
+            {
+                File.Move(rom.FilePath, newFilePath, true);
+            }
+            else
+            {
+                File.Copy(rom.FilePath, newFilePath, true);
+            }
+
+            return count;
         }
         #endregion
 

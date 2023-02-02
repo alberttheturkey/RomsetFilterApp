@@ -92,7 +92,7 @@ namespace RomsetFilterApp
             AddFilterRegionList(filter);
 
             // Get the rom files and figure out which ones to copy
-            var romsFiles = Directory.GetFiles(RomsetFolderPathTextbox.Text);
+            var romsFiles = Directory.GetFiles(RomsetFolderPathTextbox.Text, "*", SearchOption.AllDirectories);
             var roms = new List<Rom>();
 
             foreach (var romsFile in romsFiles)
@@ -112,10 +112,15 @@ namespace RomsetFilterApp
 
             RomFilter.SetRomVersionSkips(copyRoms, filter.RevisionSelection);
 
-            // Start our move or copy operations
-            Rom.StartOperation(copyRoms, outputFolder, MoveRadioButton.Checked, AlphabetSplitCheckbox.Checked);
+            // Set Zip mode
+            var zipMode = ZipMode.None;
+            zipMode = ZipRomsRadioButton.Checked ? ZipMode.Zip : zipMode;
+            zipMode = UnZipRomsRadioButton.Checked ? ZipMode.UnZip : zipMode;
 
-            MessageBox.Show($"{(MoveRadioButton.Checked ? "Move": "Copy")} operation complete. {(MoveRadioButton.Checked ? "Moved" : "Copied")} {copyRoms.Count} rom{(copyRoms.Count == 1 ? "" : "s")}");
+            // Start our move or copy operations
+            var fileCount = Rom.StartOperation(copyRoms, outputFolder, MoveRadioButton.Checked, zipMode,  AlphabetSplitCheckbox.Checked);
+
+            MessageBox.Show($"{(MoveRadioButton.Checked ? "Move": "Copy")} operation complete. {(MoveRadioButton.Checked ? "Moved" : "Copied")} {fileCount} rom{(fileCount == 1 ? "" : "s")}");
             CopyButton.Enabled = true;
         }
 

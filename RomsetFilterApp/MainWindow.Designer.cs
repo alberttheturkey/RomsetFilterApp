@@ -76,10 +76,15 @@
             this.AlphabetSplitCheckbox = new System.Windows.Forms.CheckBox();
             this.CopyButton = new System.Windows.Forms.Button();
             this.ExitButton = new System.Windows.Forms.Button();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.UnZipRomsRadioButton = new System.Windows.Forms.RadioButton();
+            this.ZipRomsRadioButton = new System.Windows.Forms.RadioButton();
+            this.LeaveAsIsRadioButton = new System.Windows.Forms.RadioButton();
             this.FilterGroupBox.SuspendLayout();
             this.FlagsGroupbox.SuspendLayout();
             this.RegionsGroupBox.SuspendLayout();
             this.OutputOptionsGroupBox.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // RomsetFolderBrowseButton
@@ -540,7 +545,7 @@
             this.OutputOptionsGroupBox.Controls.Add(this.AlphabetSplitCheckbox);
             this.OutputOptionsGroupBox.Location = new System.Drawing.Point(19, 807);
             this.OutputOptionsGroupBox.Name = "OutputOptionsGroupBox";
-            this.OutputOptionsGroupBox.Size = new System.Drawing.Size(575, 102);
+            this.OutputOptionsGroupBox.Size = new System.Drawing.Size(297, 167);
             this.OutputOptionsGroupBox.TabIndex = 5;
             this.OutputOptionsGroupBox.TabStop = false;
             this.OutputOptionsGroupBox.Text = "Output Options";
@@ -548,7 +553,7 @@
             // MoveRadioButton
             // 
             this.MoveRadioButton.AutoSize = true;
-            this.MoveRadioButton.Location = new System.Drawing.Point(471, 34);
+            this.MoveRadioButton.Location = new System.Drawing.Point(158, 112);
             this.MoveRadioButton.Name = "MoveRadioButton";
             this.MoveRadioButton.Size = new System.Drawing.Size(90, 34);
             this.MoveRadioButton.TabIndex = 2;
@@ -559,7 +564,7 @@
             // 
             this.CopyRadioButton.AutoSize = true;
             this.CopyRadioButton.Checked = true;
-            this.CopyRadioButton.Location = new System.Drawing.Point(371, 34);
+            this.CopyRadioButton.Location = new System.Drawing.Point(39, 112);
             this.CopyRadioButton.Name = "CopyRadioButton";
             this.CopyRadioButton.Size = new System.Drawing.Size(85, 34);
             this.CopyRadioButton.TabIndex = 1;
@@ -570,7 +575,7 @@
             // AlphabetSplitCheckbox
             // 
             this.AlphabetSplitCheckbox.AutoSize = true;
-            this.AlphabetSplitCheckbox.Location = new System.Drawing.Point(6, 34);
+            this.AlphabetSplitCheckbox.Location = new System.Drawing.Point(18, 47);
             this.AlphabetSplitCheckbox.Name = "AlphabetSplitCheckbox";
             this.AlphabetSplitCheckbox.Size = new System.Drawing.Size(244, 34);
             this.AlphabetSplitCheckbox.TabIndex = 0;
@@ -580,7 +585,7 @@
             // CopyButton
             // 
             this.CopyButton.Enabled = false;
-            this.CopyButton.Location = new System.Drawing.Point(463, 915);
+            this.CopyButton.Location = new System.Drawing.Point(463, 992);
             this.CopyButton.Name = "CopyButton";
             this.CopyButton.Size = new System.Drawing.Size(131, 40);
             this.CopyButton.TabIndex = 0;
@@ -590,7 +595,7 @@
             // 
             // ExitButton
             // 
-            this.ExitButton.Location = new System.Drawing.Point(19, 915);
+            this.ExitButton.Location = new System.Drawing.Point(19, 992);
             this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(131, 40);
             this.ExitButton.TabIndex = 0;
@@ -598,11 +603,57 @@
             this.ExitButton.UseVisualStyleBackColor = true;
             this.ExitButton.Click += new System.EventHandler(this.ExitButton_Click);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.LeaveAsIsRadioButton);
+            this.groupBox1.Controls.Add(this.UnZipRomsRadioButton);
+            this.groupBox1.Controls.Add(this.ZipRomsRadioButton);
+            this.groupBox1.Location = new System.Drawing.Point(322, 807);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(272, 167);
+            this.groupBox1.TabIndex = 3;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Zip Options";
+            // 
+            // UnZipRomsRadioButton
+            // 
+            this.UnZipRomsRadioButton.AutoSize = true;
+            this.UnZipRomsRadioButton.Checked = true;
+            this.UnZipRomsRadioButton.Location = new System.Drawing.Point(22, 74);
+            this.UnZipRomsRadioButton.Name = "UnZipRomsRadioButton";
+            this.UnZipRomsRadioButton.Size = new System.Drawing.Size(150, 34);
+            this.UnZipRomsRadioButton.TabIndex = 1;
+            this.UnZipRomsRadioButton.TabStop = true;
+            this.UnZipRomsRadioButton.Text = "UnZip Roms";
+            this.UnZipRomsRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // ZipRomsRadioButton
+            // 
+            this.ZipRomsRadioButton.AutoSize = true;
+            this.ZipRomsRadioButton.Location = new System.Drawing.Point(24, 34);
+            this.ZipRomsRadioButton.Name = "ZipRomsRadioButton";
+            this.ZipRomsRadioButton.Size = new System.Drawing.Size(124, 34);
+            this.ZipRomsRadioButton.TabIndex = 0;
+            this.ZipRomsRadioButton.Text = "Zip Roms";
+            this.ZipRomsRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // LeaveAsIsRadioButton
+            // 
+            this.LeaveAsIsRadioButton.AutoSize = true;
+            this.LeaveAsIsRadioButton.Location = new System.Drawing.Point(22, 112);
+            this.LeaveAsIsRadioButton.Name = "LeaveAsIsRadioButton";
+            this.LeaveAsIsRadioButton.Size = new System.Drawing.Size(141, 34);
+            this.LeaveAsIsRadioButton.TabIndex = 2;
+            this.LeaveAsIsRadioButton.TabStop = true;
+            this.LeaveAsIsRadioButton.Text = "Leave As Is";
+            this.LeaveAsIsRadioButton.UseVisualStyleBackColor = true;
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(618, 975);
+            this.ClientSize = new System.Drawing.Size(618, 1053);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.OutputOptionsGroupBox);
             this.Controls.Add(this.FilterGroupBox);
             this.Controls.Add(this.OutputFolderLabel);
@@ -625,6 +676,8 @@
             this.RegionsGroupBox.PerformLayout();
             this.OutputOptionsGroupBox.ResumeLayout(false);
             this.OutputOptionsGroupBox.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -680,5 +733,9 @@
         private Button DeselectAllFlagsButton;
         private Button DeselectAllRegionsButton;
         private CheckBox OtherRegionsCheckbox;
+        private GroupBox groupBox1;
+        private RadioButton UnZipRomsRadioButton;
+        private RadioButton ZipRomsRadioButton;
+        private RadioButton LeaveAsIsRadioButton;
     }
 }
